@@ -1,4 +1,4 @@
-use bootloader::BiosBoot;
+use bootloader::{BiosBoot, DiskImageBuilder};
 use std::path::{Path, PathBuf};
 
 fn main() {
@@ -8,10 +8,9 @@ fn main() {
         .join("x86_64-blotos")
         .join("debug")
         .join("blotos");
-
     let out_img = target_dir.join("bios.img");
 
-    let bios = BiosBoot::new(Path::new(&kernel_elf));
-    bios.create_disk_image(Path::new(&out_img))
-        .expect("échec création image BIOS");
+    DiskImageBuilder::new(kernel_elf)
+        .create_bios_image(&out_img)
+        .unwrap();
 }

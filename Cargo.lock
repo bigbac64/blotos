@@ -44,6 +44,9 @@ dependencies = [
 [[package]]
 name = "blotos"
 version = "0.1.0"
+dependencies = [
+ "bootloader_api",
+]
 
 [[package]]
 name = "bootloader"
@@ -69,6 +72,12 @@ checksum = "7154ac162c7a15727af1fe15ad38095fad9e135ba7172482e0dd1aeec384c280"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "bootloader_api"
+version = "0.11.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "039c770d47edb905d1f08ec8af202831b5f1415e70f1b43b54eacf6d0899508c"
 
 [[package]]
 name = "bumpalo"

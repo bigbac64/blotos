@@ -5,8 +5,11 @@ edition = "2024"
 
 [profile.dev]
 panic = "abort"
+lto = false
 
 [profile.release]
 panic = "abort"
+lto = false
 
 [dependencies]
+bootloader_api="0.11.14"
