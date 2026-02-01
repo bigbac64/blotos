@@ -1,5 +1,5 @@
-use bootloader::{BiosBoot, DiskImageBuilder};
-use std::path::{Path, PathBuf};
+use bootloader::{DiskImageBuilder};
+use std::path::{PathBuf};
 
 fn main() {
     let target_dir = PathBuf::from("target");
