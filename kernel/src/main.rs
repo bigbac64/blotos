@@ -2,16 +2,19 @@
 #![no_main]
 
 mod framebuffer_adapter;
+mod console;
+mod writer;
 
 use framebuffer_adapter::FramebufferAdapter;
 use embedded_graphics::{
-    mono_font::{ascii::FONT_6X10, MonoTextStyle},
     pixelcolor::Rgb888,
     prelude::*,
     text::Text,
 };
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
+use embedded_graphics::mono_font::ascii::FONT_9X18;
+use embedded_graphics::mono_font::MonoTextStyleBuilder;
 
 entry_point!(kernel_main);
 
@@ -29,10 +32,17 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     );
 
     // Create a new character style
-    let style = MonoTextStyle::new(&FONT_6X10, Rgb888::WHITE);
+    let style = MonoTextStyleBuilder::new()
+        .font(&FONT_9X18)
+        .text_color(Rgb888::new(0, 255, 0))  // Vert phosphore
+        .background_color(Rgb888::BLACK)
+        .build();
 
     // Create a text at position (20, 30) and draw it using the previously defined style
-    Text::new("Hello Rust!", Point::new(20, 30), style).draw(&mut display).expect("Drawing failed");
+    Text::new("Hello ma meuringue !", Point::new(20, 30), style)
+        .draw(&mut display).expect("Drawing failed");
+    Text::new("T'es la plus belle", Point::new(20, 50), style)
+        .draw(&mut display).expect("Drawing failed");
 
     loop {}
 }

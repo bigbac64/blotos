@@ -36,10 +36,14 @@ impl<'a> DrawTarget for FramebufferAdapter<'a> {
             let x = point.x as usize;
             let y = point.y as usize;
             let stride = self.info.stride;
-            let offset = (y * stride + x * 3) * self.info.bytes_per_pixel;
+            let offset = (y * stride + x) * self.info.bytes_per_pixel;
             self.buffer[offset] = color.r();
             self.buffer[offset + 1] = color.g();
             self.buffer[offset + 2] = color.b();
+
+            if self.info.bytes_per_pixel == 4 {
+                self.buffer[offset + 3] = 255;
+            }
         }
         Ok(())
     }
