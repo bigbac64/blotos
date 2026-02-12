@@ -9,6 +9,7 @@ mod println;
 
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
+use writer::Terminal;
 use crate::framebuffer_adapter::StaticFramebufferAdapter;
 use crate::spin_lock::SpinLock;
 
