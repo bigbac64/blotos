@@ -4,13 +4,18 @@
 use core::fmt::Write;
 mod framebuffer_adapter;
 mod writer;
+mod spin_lock;
+mod println;
 
-use framebuffer_adapter::FramebufferAdapter;
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
-use writer::Terminal;
+use crate::framebuffer_adapter::StaticFramebufferAdapter;
+use crate::spin_lock::SpinLock;
 
 entry_point!(kernel_main);
+
+static DISPLAY: SpinLock<Option<StaticFramebufferAdapter>> = SpinLock::new(None);
+
 
 fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     let fb = _boot_info.framebuffer.as_mut().unwrap();
@@ -20,18 +25,23 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     // on nettoie l'affichage du bootloader
     buffer.fill(0);
 
-    let mut display = FramebufferAdapter::new(
-        buffer,
-        info
-    );
+    unsafe {
+        let display = StaticFramebufferAdapter::new(
+            buffer.as_mut_ptr(),
+            info
+        );
 
-    let mut terminal = Terminal::new(&mut display);
-    let _ = writeln!(&mut terminal, "hello !\nc'est pas possible");
+        *DISPLAY.lock() = Some(display);
+    }
+
+
+    println!("Hello World!\nles {} polette", 5);
 
     loop {}
 }
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+    println!("Panic! : {}", _info.message());
     loop {}
 }
