@@ -1,21 +1,24 @@
+#![feature(abi_x86_interrupt)]
 #![no_std]
 #![no_main]
 
-use core::fmt::Write;
 mod framebuffer_adapter;
 mod writer;
 mod spin_lock;
+#[macro_use]
 mod println;
+mod interrupts;
+mod keyboard;
+
+
+static DISPLAY: SpinLock<Option<StaticFramebufferAdapter>> = SpinLock::new(None);
 
 use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
-use writer::Terminal;
 use crate::framebuffer_adapter::StaticFramebufferAdapter;
 use crate::spin_lock::SpinLock;
 
 entry_point!(kernel_main);
-
-static DISPLAY: SpinLock<Option<StaticFramebufferAdapter>> = SpinLock::new(None);
 
 
 fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
@@ -33,11 +36,9 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
         );
 
         *DISPLAY.lock() = Some(display);
+
+        interrupts::init()
     }
-
-
-    println!("Hello World!\nles {} polette", 5);
-
     loop {}
 }
 

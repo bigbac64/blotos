@@ -2,10 +2,12 @@
 macro_rules! print {
     ($($arg:tt)*) => {
         { // scope servant a isolé le nom des variables et éviter les conflits
-            let mut guard = DISPLAY.lock();
+            use core::fmt::Write; // necessaire pour utiliser la fonction write!
+            /* le crate est necessaire pour ne pas demander les imports a chaque utilisation */
+            let mut guard = crate::DISPLAY.lock();
             if let Some(static_framebuffer) = guard.as_mut() {
                 let display = &mut static_framebuffer.as_framebuffer_adapter();
-                let mut terminal = Terminal::new(display);
+                let mut terminal = crate::writer::Terminal::new(display);
                 let _ = write!(&mut terminal, $($arg)*);
             }
         }
@@ -14,6 +16,6 @@ macro_rules! print {
 
 #[macro_export]
 macro_rules! println {
-    () => { print!("\n") };
-    ($($arg:tt)*) => { print!("{}\n", format_args!($($arg)*)) }
+    () => { crate::print!("\n") };
+    ($($arg:tt)*) => { crate::print!("{}\n", format_args!($($arg)*)) }
 }

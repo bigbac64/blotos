@@ -1,4 +1,3 @@
-use core::fmt::Write;
 use embedded_graphics::mono_font::ascii::FONT_9X18;
 use embedded_graphics::mono_font::{MonoTextStyle, MonoTextStyleBuilder};
 use embedded_graphics::{
@@ -45,7 +44,7 @@ impl<'a> Terminal<'a> {
     }
 }
 
-impl<'a> Write for Terminal<'a> {
+impl<'a> core::fmt::Write for Terminal<'a> {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         let collection = s.split('\n');
         let count = collection.clone().count();

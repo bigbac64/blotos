@@ -13,4 +13,7 @@ lto = false
 
 [dependencies]
 bootloader_api="0.11.14"
-embedded-graphics = "0.8.1"
+embedded-graphics = "0.8.1" # Outils graphics intéragissable
+x86_64 = "0.15" # Gestion Interrupt Descriptor Table et instruction CPU
+pic8259 = "0.11" #
+pc-keyboard = "0.8.0" # Décodage scancodes (hexa des touches clavier en
