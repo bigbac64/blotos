@@ -62,5 +62,5 @@ impl<T> DerefMut for SpinLockGuard<'_, T> {
         }
     }
 }
-// on définit que spinlock ai safe pour l'utiliser en static (avec Sync)
+// on définit que spinlock est safe pour l'utiliser en static (avec Sync)
 unsafe impl<T: Send> Sync for SpinLock<T> {}

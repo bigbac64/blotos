@@ -5,10 +5,8 @@ macro_rules! print {
             use core::fmt::Write; // necessaire pour utiliser la fonction write!
             /* le crate est necessaire pour ne pas demander les imports a chaque utilisation */
             let mut guard = crate::DISPLAY.lock();
-            if let Some(static_framebuffer) = guard.as_mut() {
-                let display = &mut static_framebuffer.as_framebuffer_adapter();
-                let mut terminal = crate::writer::Terminal::new(display);
-                let _ = write!(&mut terminal, $($arg)*);
+            if let Some(terminal) = guard.as_mut() {
+                let _ = write!(terminal, $($arg)*);
             }
         }
     }

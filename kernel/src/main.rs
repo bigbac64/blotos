@@ -9,14 +9,14 @@ mod spin_lock;
 mod println;
 mod interrupts;
 mod keyboard;
+mod lazy_static;
 
-
-static DISPLAY: SpinLock<Option<StaticFramebufferAdapter>> = SpinLock::new(None);
 
 use bootloader_api::{entry_point, BootInfo};
-use core::panic::PanicInfo;
-use crate::framebuffer_adapter::StaticFramebufferAdapter;
 use crate::spin_lock::SpinLock;
+use crate::writer::Terminal;
+
+static DISPLAY: SpinLock<Option<Terminal>> = SpinLock::new(None);
 
 entry_point!(kernel_main);
 
@@ -29,21 +29,22 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     // on nettoie l'affichage du bootloader
     buffer.fill(0);
 
-    unsafe {
-        let display = StaticFramebufferAdapter::new(
-            buffer.as_mut_ptr(),
-            info
-        );
 
-        *DISPLAY.lock() = Some(display);
+    *DISPLAY.lock() = Some(Terminal::new(buffer.as_mut_ptr(), info));
+    println!("zozoL!");
+    interrupts::init();
+    println!("zaza!");
 
-        interrupts::init()
+    println!("Welcome to KERNEL!");
+    print!("SOSO");
+    loop {
+        x86_64::instructions::hlt();
     }
-    loop {}
 }
 
+#[cfg(not(test))]
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(_info: &core::panic::PanicInfo) -> ! {
     println!("Panic! : {}", _info.message());
     loop {}
 }
