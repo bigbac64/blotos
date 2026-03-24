@@ -10,7 +10,7 @@ mod println;
 mod interrupts;
 mod keyboard;
 mod lazy_static;
-
+mod gdt;
 
 use bootloader_api::{entry_point, BootInfo};
 use crate::spin_lock::SpinLock;
@@ -31,12 +31,11 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
 
 
     *DISPLAY.lock() = Some(Terminal::new(buffer.as_mut_ptr(), info));
-    println!("zozoL!");
+
+    gdt::init();
     interrupts::init();
-    println!("zaza!");
 
     println!("Welcome to KERNEL!");
-    print!("SOSO");
     loop {
         x86_64::instructions::hlt();
     }

@@ -9,6 +9,7 @@ pub struct OnceCell<T> {
 }
 
 impl<T> OnceCell<T> {
+    /// Sert a definir une référence d'objet de facon constant
     /// OnceCell avec le fonctionnement similaire au core::cell::OnceCell
     /// mais thread safe et static-able (grace au const de new mais reste quand meme limité)
     pub const fn new() -> OnceCell<T> {
@@ -50,6 +51,7 @@ pub struct Lazy<T, F = fn() -> T> {
 }
 
 impl<T, F> Lazy<T, F> where F: Fn() -> T {
+    /// Sert a définir un initialiseur pour le OnceCell afin de l'initialiser au moment voulu
     pub const fn new(init: F) -> Lazy<T, F> {
         Lazy{
             cell: OnceCell::new(),
@@ -83,6 +85,8 @@ where
 
 #[macro_export]
 macro_rules! lazy_static {
+    // permet de créer un static lors de la premiere appele de ce dernier
+    // pour ainsi créer un static pouvant etre dépendant d'un autre
     // Pattern : static ref NOM: TYPE = { code };
     (static ref $name:ident : $type:ty = $init:expr; ) => {
         static $name: $crate::lazy_static::Lazy<$type> = $crate::lazy_static::Lazy::new(|| $init);
