@@ -51,7 +51,7 @@ pub fn init() {
 
     crate::println!("Chargement GDT...");
     GDT.0.load();
-    crate::println!("GDT chargée");
+    crate::println!("GDT chargée"); // TODO gérer l'UTF8
     unsafe {
         crate::println!("Configuration segments...");
         CS::set_reg(GDT.1.code_selector);

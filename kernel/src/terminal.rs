@@ -7,12 +7,15 @@ use embedded_graphics::{
     text::Text,
 };
 use embedded_graphics::prelude::Point;
+use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
 use crate::framebuffer_adapter::{StaticFramebufferAdapter};
+use crate::utils::array::PositionalSequence;
 
 pub(crate) struct Terminal<'a>{
     display: StaticFramebufferAdapter,
     position: Point, // position des caractère col, line
     // cursor: Point, // position du curseur
+    readline: PositionalSequence<(char, Point), 256>, // limitation de la taille du buffer (à réadapter au besoin)
     offset: Point, // espace pris par caractère en pixel
     padding_line: Point, // espace x entre le bord de l'écran, espace y entre chaque ligne
     style: MonoTextStyle<'a, Rgb888>,
@@ -29,10 +32,18 @@ impl<'a> Terminal<'a> {
             display: unsafe { StaticFramebufferAdapter::new(buffer, info) },
             position: Point::new(0, 1),
             // cursor: Point::zero(),
+            readline: PositionalSequence::new(),
             offset: Point::new(9, 18),
             padding_line: Point::new(1, 5),
             style,
         }
+    }
+
+    pub fn patch_buffer(&mut self, position: Point) {
+        Rectangle::new(position, Size::new((self.offset.x + self.padding_line.x) as u32, (self.offset.y + self.padding_line.y) as u32))
+            .into_styled(PrimitiveStyle::with_fill(Rgb888::BLACK))
+            .draw(&mut self.display.as_framebuffer_adapter())
+            .unwrap();
     }
 
     pub fn pixel_align(&self) -> Point{
@@ -42,6 +53,19 @@ impl<'a> Terminal<'a> {
     pub fn new_line(&mut self) {
         self.position.y += 1;
         self.position.x = 0;
+    }
+
+    // TODO Créer une fenêtre terminal et une fenêtre debugger a droite (bordurer les fenetres) il faudra donc avoir un debugger qui sélectionne la fenêtre debug par defaut
+    pub fn remove_char(&mut self) {
+        self.readline.remove();
+        self.position = self.readline.current().unwrap().1;
+        self.patch_buffer(self.pixel_align());
+    }
+
+    pub fn full_clear(&mut self) {
+        self.position.y = 0;
+        self.position.x = 0;
+        self.display.as_framebuffer_adapter().clear(Rgb888::BLACK).expect("Full clear failed");
     }
 
     pub fn new_col(&mut self) {
@@ -68,6 +92,7 @@ impl<'a> core::fmt::Write for Terminal<'a> {
                 .draw(&mut self.display.as_framebuffer_adapter())
                 .expect("Write error");
             self.new_col();
+            self.readline.insert((c, self.position));
         }
         Ok(())
     }

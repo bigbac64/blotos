@@ -3,7 +3,7 @@
 #![no_main]
 
 mod framebuffer_adapter;
-mod writer;
+mod terminal;
 mod spin_lock;
 #[macro_use]
 mod println;
@@ -11,10 +11,12 @@ mod interrupts;
 mod keyboard;
 mod lazy_static;
 mod gdt;
+mod window;
+pub mod utils;
 
 use bootloader_api::{entry_point, BootInfo};
 use crate::spin_lock::SpinLock;
-use crate::writer::Terminal;
+use crate::terminal::Terminal;
 
 static DISPLAY: SpinLock<Option<Terminal>> = SpinLock::new(None);
 
