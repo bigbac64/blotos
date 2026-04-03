@@ -12,7 +12,7 @@ use core::convert::Infallible;
 ///
 /// Cette structure permet de manipuler le framebuffer en static dans un contexte d'OS
 ///
-/// TODO Donc dans les fais on a FramebufferAdapter qui manipule des ref la ou StaticFramebufferAdapter qui manipule des pointeurs
+/// TODO Donc dans les fais on a FramebufferAdapter qui manipule des ref la où StaticFramebufferAdapter qui manipule des pointeurs
 /// TODO il faut donc refactoriser pour ne gerer qu'un seul type de framebuffer qui retoruen buffer *mut u8 en &mut [u8]
 ///
 /// # Champs

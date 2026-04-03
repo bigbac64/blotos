@@ -3,6 +3,8 @@ use core::mem::MaybeUninit;
 use core::ops::Deref;
 use crate::spin_lock::SpinLock;
 
+/// Fichier d'apprentissage pour la gestion de lazy static qui est maine
+
 pub struct OnceCell<T> {
     inner: UnsafeCell<MaybeUninit<T>>,
     initialized: SpinLock<bool>,
@@ -83,12 +85,14 @@ where
     F: Sync,
 {}
 
+
+/// permet de créer un static lors de la premiere appele de ce dernier
+/// pour ainsi créer un static pouvant etre dépendant d'un autre
+/// ## Pattern :
+/// ```static ref NOM: TYPE = { code };```
 #[macro_export]
 macro_rules! lazy_static {
-    // permet de créer un static lors de la premiere appele de ce dernier
-    // pour ainsi créer un static pouvant etre dépendant d'un autre
-    // Pattern : static ref NOM: TYPE = { code };
     (static ref $name:ident : $type:ty = $init:expr; ) => {
-        static $name: $crate::lazy_static::Lazy<$type> = $crate::lazy_static::Lazy::new(|| $init);
+        static $name: $crate::utils::lazy_static::Lazy<$type> = $crate::utils::lazy_static::Lazy::new(|| $init);
     };
 }

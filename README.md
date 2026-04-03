@@ -4,7 +4,7 @@ cargo clean
 
 mode 64 bit  
 ```sh
-cargo +nightly build -p blotos --target x86_64-blotos.json -Z build-std=core,compiler_builtins -Z build-std-features=compiler-builtins-mem
+cargo +nightly build -p blotos --target x86_64-blotos.json -Z build-std=core,compiler_builtins,alloc -Z build-std-features=compiler-builtins-mem
 ```
 
 

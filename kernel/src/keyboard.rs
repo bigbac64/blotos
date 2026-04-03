@@ -39,9 +39,6 @@ pub fn process_scancode(scancode: u8) {
                         }
                     }
                 }
-                DecodedKey::Unicode(character) => {
-                    print!("{}", character);
-                }
             }
         }
     }

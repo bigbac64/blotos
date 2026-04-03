@@ -1,11 +1,11 @@
-use embedded_graphics::geometry::Point;
-use crate::framebuffer_adapter::StaticFramebufferAdapter;
+use embedded_graphics::geometry::{Point, Size};
 
 pub(crate) struct WindowContent{
 
 }
 
-pub(crate) struct Window{
-    display: StaticFramebufferAdapter,
-    size: Point
+pub(crate) struct Window {
+    position: Point, // emplacement de la fenêtre en top left
+    size: Size
 }
+
