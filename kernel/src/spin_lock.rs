@@ -15,6 +15,10 @@ impl<T> SpinLock<T> {
             data: UnsafeCell::new(data),
         }
     }
+    
+    pub fn is_locked(&self) -> bool{
+        self.locked.load(Ordering::SeqCst)
+    }
 
     pub fn lock(&self) -> SpinLockGuard<'_, T> {
         while self.locked.compare_exchange(

@@ -49,22 +49,22 @@ pub fn init() {
     use x86_64::instructions::segmentation::{CS, Segment, DS, ES, SS};
     use x86_64::instructions::tables::load_tss;
 
-    crate::println!("Chargement GDT...");
+    crate::dbg_println!("Chargement GDT...");
     GDT.0.load();
-    crate::println!("GDT chargée"); // TODO gérer l'UTF8
+    crate::dbg_println!("GDT chargée"); // TODO gérer l'UTF8
     unsafe {
-        crate::println!("Configuration segments...");
+        crate::dbg_println!("Configuration segments...");
         CS::set_reg(GDT.1.code_selector);
-        crate::println!("  CS = {:?}", GDT.1.code_selector);
+        crate::dbg_println!("  CS = {:?}", GDT.1.code_selector);
 
         DS::set_reg(GDT.1.data_selector);
         ES::set_reg(GDT.1.data_selector);
         SS::set_reg(GDT.1.data_selector);
-        crate::println!("  DS/ES/SS = {:?}", GDT.1.data_selector);
+        crate::dbg_println!("  DS/ES/SS = {:?}", GDT.1.data_selector);
 
         load_tss(GDT.1.tss_selector);
-        crate::println!("  TSS = {:?}", GDT.1.tss_selector);
+        crate::dbg_println!("  TSS = {:?}", GDT.1.tss_selector);
     }
 
-    crate::println!("GDT init terminée");
+    crate::dbg_println!("GDT init terminée");
 }

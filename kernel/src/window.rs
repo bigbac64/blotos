@@ -7,18 +7,18 @@ use embedded_graphics::Drawable;
 use embedded_graphics::geometry::{Point, Size};
 use embedded_graphics::pixelcolor::{Rgb888, RgbColor, WebColors};
 use embedded_graphics::primitives::{Primitive, PrimitiveStyle, Rectangle};
+use crate::dbg_println;
 use crate::framebuffer_adapter::FramebufferAdapter;
 use crate::graphie::DISPLAY_;
 use crate::spin_lock::SpinLock;
 use crate::utils::downcaster::Downcast;
 
 pub(crate) struct WindowRegistry{
-    register: BTreeMap<TypeId, Vec<Box<dyn Window>>>
+    pub(crate) register: BTreeMap<TypeId, Vec<Box<dyn Window>>>
 }
 
 impl WindowRegistry {
-    pub fn insert(&mut self, window: Box<dyn Window>) {
-        let id = window.type_id();
+    pub fn insert(&mut self, id: TypeId, window: Box<dyn Window>) {
         self.register.entry(id).or_insert_with(Vec::new).push(window);
     }
 
@@ -30,11 +30,11 @@ impl WindowRegistry {
         self.register.get_mut(id).unwrap().get_mut(index)
     }
 
-    pub fn all(&mut self) -> Iter<TypeId, Vec<Box<dyn Window>>>{
+    pub fn all(&mut self) -> Iter<'_, TypeId, Vec<Box<dyn Window>>>{
         self.register.iter()
     }
 
-    pub fn all_mut(&mut self) -> IterMut<TypeId, Vec<Box<dyn Window>>>{
+    pub fn all_mut(&mut self) -> IterMut<'_, TypeId, Vec<Box<dyn Window>>>{
         self.register.iter_mut()
     }
 }
@@ -62,10 +62,10 @@ pub(crate) trait Window: Downcast {
             .unwrap()
     }
 
-    fn render(&self, frame: &mut FramebufferAdapter);
+    fn render(&mut self, frame: &mut FramebufferAdapter);
 
     fn register(self: Box<Self>) where Self: Sized + 'static {
-        WINDOW_REGISTRY.lock().insert(self);
+        WINDOW_REGISTRY.lock().insert(TypeId::of::<Self>(), self);
     }
 }
 

@@ -16,19 +16,15 @@ pub mod utils;
 pub mod graphie;
 mod allocator;
 mod memory;
+pub mod dbg_print;
 
 use alloc::boxed::Box;
+use core::any::TypeId;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use bootloader_api::config::Mapping;
-use embedded_graphics::Drawable;
-use embedded_graphics::pixelcolor::Rgb888;
-use embedded_graphics::prelude::{Point, Primitive, RgbColor, Size};
-use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
-use embedded_graphics::text::Text;
-use crate::graphie::DISPLAY_;
 use crate::memory::{init_memory};
 use crate::terminal::Terminal;
-use crate::window::Window;
+use crate::window::{render_updated_window, Window};
 
 
 static BOOTLOADER_CONFIG: BootloaderConfig = {
@@ -55,43 +51,36 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     // On envoie le terminal vers le tas, pour pouvoir l'intégrer au register des fenêtres
     //
 
+    Box::new(Terminal::new()).register();
 
-    Rectangle::new(Point::new(1, 1), Size::new(30, 30))
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::WHITE, 3))
-        .draw(&mut DISPLAY_.lock().as_mut().unwrap().0.as_framebuffer_adapter())
-        .unwrap();
-
-    {
-        Box::new(Terminal::new()).register();
-        let mut registry = crate::window::WINDOW_REGISTRY.lock();
-        if let Some(window) = registry.get_mut(&core::any::TypeId::of::<Terminal>(), 0) {
-            window.draw()
-        }
-    }
-
-
-    Rectangle::new(Point::new(60, 1), Size::new(30, 30))
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::WHITE, 3))
-        .draw(&mut DISPLAY_.lock().as_mut().unwrap().0.as_framebuffer_adapter())
-        .unwrap();
-
-    println!("Memory OK");
+    dbg_println!("Memory OK");
+    dbg_println!("---");
 
     // 3. GDT et IDT
     gdt::init();
+    dbg_println!("GDT OK");
     interrupts::init();
-    println!("GDT/IDT OK");
+    dbg_println!("IDT OK");
 
 
 
     let heap_value = Box::new(41);
-    println!("heap_value at {:p}", heap_value);
+    dbg_println!("heap_value at {:p}", heap_value);
+    render_updated_window();
 
-    loop { x86_64::instructions::hlt(); }
+    loop {
+        x86_64::instructions::hlt();
+        // mise a jour render sans interruption CPU (évite le conflit des lock infini de mon spin lock)
+        // peut-être pas une bonne idee cette logique à voir si c'est bloquand plus tard
+        x86_64::instructions::interrupts::without_interrupts(|| {
+            render_updated_window();
+        });
+    }
 }
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     println!("Panic! : {}", _info.message());
+    dbg_println!("Panic! : {}", _info.message());
     loop {}
 }

@@ -13,5 +13,5 @@ cargo run -p xtask
 ```
 
 ```shell
-qemu-system-x86_64 -drive format=raw,file=target/bios.img -serial stdio -no-reboot -d int > log.txt 2>&1
+qemu-system-x86_64 -drive format=raw,file=target/bios.img -serial stdio -no-reboot -d int 2>qemu_int.log
 ```
