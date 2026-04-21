@@ -1,13 +1,14 @@
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-        { // scope servant a isolé le nom des variables et éviter les conflits
-            use core::fmt::Write; // necessaire pour utiliser la fonction write!
+        {// scope servant a isolé le nom des variables et éviter les conflits
+            use core::fmt::Write;
             /* le crate est necessaire pour ne pas demander les imports a chaque utilisation */
-            let mut guard = crate::DISPLAY.lock();
-            if let Some(terminal) = guard.as_mut() {
-                let _ = write!(terminal, $($arg)*);
+            let mut registry = crate::window::WINDOW_REGISTRY.lock();
+            if let Some(window) = registry.get_mut(&core::any::TypeId::of::<crate::terminal::Terminal>(), 0) {
+                let _ = write!(window.as_any_mut().downcast_mut::<crate::terminal::Terminal>().unwrap(), $($arg)*);
             }
+
         }
     }
 }

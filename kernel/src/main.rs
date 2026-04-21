@@ -20,15 +20,15 @@ mod memory;
 use alloc::boxed::Box;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use bootloader_api::config::Mapping;
-use x86_64::registers::control::Cr3;
-use x86_64::structures::paging::{OffsetPageTable, PageTable};
-use x86_64::VirtAddr;
-use crate::allocator::init_heap;
-use crate::memory::{init_memory, BootInfoFrameAllocator};
-use crate::spin_lock::SpinLock;
+use embedded_graphics::Drawable;
+use embedded_graphics::pixelcolor::Rgb888;
+use embedded_graphics::prelude::{Point, Primitive, RgbColor, Size};
+use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
+use embedded_graphics::text::Text;
+use crate::graphie::DISPLAY_;
+use crate::memory::{init_memory};
 use crate::terminal::Terminal;
-
-static DISPLAY: SpinLock<Option<Terminal>> = SpinLock::new(None);
+use crate::window::Window;
 
 
 static BOOTLOADER_CONFIG: BootloaderConfig = {
@@ -45,18 +45,44 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     let info = fb.info();
     let buffer = fb.buffer_mut();
     buffer.fill(0);
-    *DISPLAY.lock() = Some(Terminal::new(buffer.as_mut_ptr(), info));
 
-    // 2. GDT et IDT
+    // 2. Mémoire
+    let pmo = _boot_info.physical_memory_offset.take().unwrap();
+    let memory_regions = &_boot_info.memory_regions;
+    init_memory(pmo, memory_regions).expect("Impossible d'afficher ce text display lancé apres");
+    graphie::init_display(buffer.as_mut_ptr(), info);
+
+    // On envoie le terminal vers le tas, pour pouvoir l'intégrer au register des fenêtres
+    //
+
+
+    Rectangle::new(Point::new(1, 1), Size::new(30, 30))
+        .into_styled(PrimitiveStyle::with_stroke(Rgb888::WHITE, 3))
+        .draw(&mut DISPLAY_.lock().as_mut().unwrap().0.as_framebuffer_adapter())
+        .unwrap();
+
+    {
+        Box::new(Terminal::new()).register();
+        let mut registry = crate::window::WINDOW_REGISTRY.lock();
+        if let Some(window) = registry.get_mut(&core::any::TypeId::of::<Terminal>(), 0) {
+            window.draw()
+        }
+    }
+
+
+    Rectangle::new(Point::new(60, 1), Size::new(30, 30))
+        .into_styled(PrimitiveStyle::with_stroke(Rgb888::WHITE, 3))
+        .draw(&mut DISPLAY_.lock().as_mut().unwrap().0.as_framebuffer_adapter())
+        .unwrap();
+
+    println!("Memory OK");
+
+    // 3. GDT et IDT
     gdt::init();
     interrupts::init();
     println!("GDT/IDT OK");
 
-    // 3. Mémoire ensuite
-    let pmo = _boot_info.physical_memory_offset.take().unwrap();
-    let memory_regions = &_boot_info.memory_regions;
-    init_memory(pmo, memory_regions).expect("Memory init failed");
-    println!("Memory OK");
+
 
     let heap_value = Box::new(41);
     println!("heap_value at {:p}", heap_value);

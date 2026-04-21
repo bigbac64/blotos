@@ -11,15 +11,16 @@ static KEYBOARD: SpinLock<Keyboard<layouts::Azerty, ScancodeSet1>> = SpinLock::n
 
 pub fn process_scancode(scancode: u8) {
     let mut keyboard = KEYBOARD.lock();
+    let mut registry = crate::window::WINDOW_REGISTRY.lock();
+    let terminal = registry.get_mut(&core::any::TypeId::of::<crate::terminal::Terminal>(), 0)
+        .unwrap().as_any_mut().downcast_mut::<crate::terminal::Terminal>().unwrap();
+
 
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
                 DecodedKey::Unicode('\x08') => {
-                    let mut guard = crate::DISPLAY.lock();
-                    if let Some(terminal) = guard.as_mut() {
-                        terminal.remove_char();
-                    }
+                    terminal.remove_char();
                 }, // Backspace en ASCII (lié a la comptabilité de traitement des ces raw code)
                 DecodedKey::Unicode('\x1B') => print!("<Escape>"),   // Escape en ASCII
                 DecodedKey::Unicode('\x7F') => print!("<Delete>"),   // Delete en ASCII (parfois)
@@ -29,10 +30,7 @@ pub fn process_scancode(scancode: u8) {
                 DecodedKey::RawKey(keycode) => {
                     match keycode {
                         KeyCode::Backspace => {
-                            let mut guard = crate::DISPLAY.lock();
-                            if let Some(terminal) = guard.as_mut() {
-                                terminal.remove_char();
-                            }
+                            terminal.remove_char();
                         }
                         _ => {
                             print!("{:?}", keycode);
