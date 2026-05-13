@@ -5,7 +5,7 @@ use embedded_graphics::{
     draw_target::DrawTarget,
 };
 use core::convert::Infallible;
-
+use crate::dbg_println;
 
 /// La structure `StaticFramebufferAdapter` fournit une représentation d'un framebuffer statique.
 /// Elle est utilisée pour interagir directement avec la mémoire du framebuffer.

@@ -1,30 +1,29 @@
 #![feature(abi_x86_interrupt)]
+#![feature(vec_from_fn)]
 #![no_std]
 #![no_main]
 extern crate alloc;
 
 mod framebuffer_adapter;
-mod terminal;
 mod spin_lock;
 #[macro_use]
 mod println;
 mod interrupts;
 mod keyboard;
 mod gdt;
-mod window;
 pub mod utils;
 pub mod graphie;
 mod allocator;
 mod memory;
 pub mod dbg_print;
+pub mod gui;
 
 use alloc::boxed::Box;
-use core::any::TypeId;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use bootloader_api::config::Mapping;
+use crate::gui::terminal::Terminal;
+use crate::gui::window::{render_updated_window, Window};
 use crate::memory::{init_memory};
-use crate::terminal::Terminal;
-use crate::window::{render_updated_window, Window};
 
 
 static BOOTLOADER_CONFIG: BootloaderConfig = {
@@ -80,7 +79,7 @@ fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
-    println!("Panic! : {}", _info.message());
-    dbg_println!("Panic! : {}", _info.message());
+    //println!("Panic! : {}", _info.message());
+    dbg_println!("Panic! : {}", _info);
     loop {}
 }

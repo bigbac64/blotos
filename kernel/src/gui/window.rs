@@ -2,14 +2,15 @@ use alloc::boxed::Box;
 use alloc::collections::btree_map::{Iter, IterMut};
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-use core::any::{Any, TypeId};
+use core::any::{TypeId};
 use embedded_graphics::Drawable;
 use embedded_graphics::geometry::{Point, Size};
-use embedded_graphics::pixelcolor::{Rgb888, RgbColor, WebColors};
+use embedded_graphics::pixelcolor::{Rgb888, RgbColor};
 use embedded_graphics::primitives::{Primitive, PrimitiveStyle, Rectangle};
-use crate::dbg_println;
 use crate::framebuffer_adapter::FramebufferAdapter;
 use crate::graphie::DISPLAY_;
+use crate::gui::layout::inset::Inset;
+use crate::gui::layout::r#box::BoxLayout;
 use crate::spin_lock::SpinLock;
 use crate::utils::downcaster::Downcast;
 
@@ -48,16 +49,20 @@ pub(crate) static WINDOW_REGISTRY: SpinLock<WindowRegistry> = SpinLock::new(Wind
 
 
 pub(crate) trait Window: Downcast {
+    fn win_layout(&self) -> BoxLayout;
     fn win_position(&self) -> Point;
-    fn win_size(&self) -> Size;
+    fn is_dirty(&self) -> bool;
+    fn mark_clean(&mut self);
 
     fn background_color(&self) -> Rgb888 {
         Rgb888::BLACK
     }
 
+    fn win_stroke(&self) -> u32 {3}
+
     fn draw(&self, frame: &mut FramebufferAdapter){
-        Rectangle::new(self.win_position(), self.win_size())
-            .into_styled(PrimitiveStyle::with_stroke(Rgb888::WHITE, 3))
+        Rectangle::new(self.win_position(), self.win_layout().size())
+            .into_styled(PrimitiveStyle::with_stroke(Rgb888::WHITE, self.win_stroke()))
             .draw(frame)
             .unwrap()
     }
@@ -78,8 +83,11 @@ pub fn render_updated_window(){
 
     for (_, windows) in registers.all_mut() {
         for window in windows{
-            window.draw(&mut display.0.as_framebuffer_adapter());
-            window.render(&mut display.0.as_framebuffer_adapter());
+            if window.is_dirty(){
+                window.draw(&mut display.0.as_framebuffer_adapter());
+                window.render(&mut display.0.as_framebuffer_adapter());
+                window.mark_clean()
+            }
         }
     }
 }

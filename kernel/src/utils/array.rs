@@ -52,3 +52,38 @@ impl<T, const CAP: usize> Index<usize> for PositionalSequence<T, CAP>{
         &self.get(index)
     }
 }
+
+
+struct Matrix<T, const X: usize, const Y: usize> {
+    data: [[T; X]; Y],
+    rows: usize,
+    cols: usize,
+}
+
+impl<T: Clone + Default, const X: usize, const Y: usize> Matrix<T, X, Y> {
+    /// Crée une nouvelle matrice de taille `rows x cols` avec des valeurs par défaut.
+    pub fn new() -> Self {
+        Matrix {
+            data: [(); Y].map(|_| [(); X].map(|_| T::default())),
+            rows: Y,
+            cols: X,
+        }
+    }
+
+    pub fn get(&self, row: usize, col: usize) -> Option<&T> {
+        if row < self.rows && col < self.cols {
+            Some(&self.data[row][col])
+        } else {
+            None
+        }
+    }
+
+    pub fn set(&mut self, row: usize, col: usize, value: T) -> bool {
+        if row < self.rows && col < self.cols {
+            self.data[row][col] = value;
+            true
+        } else {
+            false
+        }
+    }
+}
