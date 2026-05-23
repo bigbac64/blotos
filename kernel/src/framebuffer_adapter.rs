@@ -77,6 +77,10 @@ impl<'a> DrawTarget for FramebufferAdapter<'a> {
         I: IntoIterator<Item=Pixel<Self::Color>>
     {
         for Pixel(point, color) in pixels {
+            if point.x < 0 || point.y < 0 {
+                dbg_println!("Erreur de position : {:?}", point);
+                continue;
+            }
             let x = point.x as usize;
             let y = point.y as usize;
             let stride = self.info.stride;

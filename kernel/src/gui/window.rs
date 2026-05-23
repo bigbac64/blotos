@@ -11,6 +11,7 @@ use crate::framebuffer_adapter::FramebufferAdapter;
 use crate::graphie::DISPLAY_;
 use crate::gui::layout::inset::Inset;
 use crate::gui::layout::r#box::BoxLayout;
+use crate::gui::render::Renderable;
 use crate::spin_lock::SpinLock;
 use crate::utils::downcaster::Downcast;
 
@@ -48,9 +49,8 @@ pub(crate) static WINDOW_REGISTRY: SpinLock<WindowRegistry> = SpinLock::new(Wind
 });
 
 
-pub(crate) trait Window: Downcast {
+pub(crate) trait Window: Downcast + Renderable {
     fn win_layout(&self) -> BoxLayout;
-    fn win_position(&self) -> Point;
     fn is_dirty(&self) -> bool;
     fn mark_clean(&mut self);
 
@@ -61,13 +61,11 @@ pub(crate) trait Window: Downcast {
     fn win_stroke(&self) -> u32 {3}
 
     fn draw(&self, frame: &mut FramebufferAdapter){
-        Rectangle::new(self.win_position(), self.win_layout().size())
+        Rectangle::new(self.win_layout().position, self.win_layout().size())
             .into_styled(PrimitiveStyle::with_stroke(Rgb888::WHITE, self.win_stroke()))
             .draw(frame)
             .unwrap()
     }
-
-    fn render(&mut self, frame: &mut FramebufferAdapter);
 
     fn register(self: Box<Self>) where Self: Sized + 'static {
         WINDOW_REGISTRY.lock().insert(TypeId::of::<Self>(), self);

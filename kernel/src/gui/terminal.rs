@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use alloc::vec::Vec;
 use embedded_graphics::mono_font::ascii::FONT_9X18;
 use embedded_graphics::mono_font::{MonoTextStyle, MonoTextStyleBuilder};
@@ -10,26 +11,27 @@ use crate::framebuffer_adapter::FramebufferAdapter;
 use crate::gui::layout::grid::GridBoxLayout;
 use crate::gui::layout::inset::Inset;
 use crate::gui::layout::r#box::BoxLayout;
+use crate::gui::render::Renderable;
 use crate::gui::window::Window;
 use crate::utils::array::PositionalSequence;
-use super::layout::glyph::{Glyph, GlyphBox, GlyphLayout};
+use super::layout::glyph::{Glyph, GlyphLayout, GlyphRenderer};
 
-enum TerminalAction{
-    WriteChar(char),
-    NewLine,
-    Clear,
-    Backspace,
-}
 
 pub(crate) struct Terminal{
-    actions: Vec<TerminalAction>,
+    renders: Vec<Box<dyn Renderable>>,
     cursor: Point, // position du curseur
     stdin: PositionalSequence<(char, Point), 256>, // limitation de la taille du buffer (à réadapter au besoin)
     glyph: Glyph<'static>,
     dirty: bool,
 }
 
-
+impl Renderable for Terminal {
+    fn render(&mut self, frame: &mut FramebufferAdapter) {
+        for mut rend in self.renders.drain(..).collect::<Vec<_>>(){
+            rend.render(frame);
+        }
+    }
+}
 
 impl Window for Terminal {
 
@@ -37,13 +39,10 @@ impl Window for Terminal {
         let mut padding = Inset::new(2, 2, 2, 2);
         padding.add_all(self.win_stroke() as i32);
         BoxLayout::new(
+            Point::new(5, 5),
             Size::new(740, 540),
             padding,
         )
-    }
-
-    fn win_position(&self) -> Point {
-        Point::new(5, 5)
     }
 
     fn is_dirty(&self) -> bool {
@@ -53,41 +52,12 @@ impl Window for Terminal {
     fn mark_clean(&mut self) {
         self.dirty = false;
     }
-
-    fn render(&mut self, frame: &mut FramebufferAdapter) {
-        for action in self.actions.drain(..).collect::<Vec<_>>(){
-            match action {
-                TerminalAction::WriteChar(c) => {
-                    let mut buf = [0u8; 4]; // tableau d'octet pour utf-8 (max 4 bytes)
-                    let character: &str = c.encode_utf8(&mut buf);
-                    if character == "\n" {
-                        self.new_line();
-                    } else {
-                        let inset = Inset::new(2, 0, 2, 0);
-                        // gerer le positionnement du texte il doit aussi etre utilisable dans backspace pour rect
-                        GlyphBox::new(character, self.glyph, inset).draw(self.win_layout().content_offset(), frame);
-                        self.new_col();
-                    }
-                }
-                TerminalAction::NewLine => {
-                    self.new_line();
-                },
-                TerminalAction::Clear => todo! (),
-                TerminalAction::Backspace => {
-                    Rectangle::new(self.alignment(self.cursor), self.glyph.size())
-                        .into_styled(PrimitiveStyle::with_fill(Rgb888::CSS_GRAY))
-                        .draw(frame)
-                        .unwrap();
-                }
-            }
-        }
-    }
 }
 
 impl Terminal {
     pub fn new() -> Self {
         Self {
-            actions: Vec::new(),
+            renders: Vec::new(),
             cursor: Point::new(0, 0),
             stdin: PositionalSequence::new(),
             dirty: true,
@@ -95,7 +65,7 @@ impl Terminal {
                 MonoTextStyleBuilder::new()
                     .font(&FONT_9X18)
                     .text_color(Rgb888::new(0, 255, 0))  // Vert phosphore
-                    .background_color(Rgb888::RED)
+                    .background_color(Rgb888::BLACK)
                     .build()
             )
         }
@@ -105,13 +75,24 @@ impl Terminal {
         dbg_println!("remove char");
         self.cursor = self.stdin.current().unwrap().1;
         self.stdin.remove();
-        self.actions.push(TerminalAction::Backspace); // TODO ici on part du principe que actions est executé plus tard, si cursor change alors ca va bugger
+        // ici RenderGlyph Empty ?
+        let point = self.cursor_alignment(AnchorPoint::Center, None);
+        self.renders.push(Box::new(GlyphRenderer {text: ' ', position: point, style: self.glyph.style}));
         self.dirty = true;
     }
 
     pub fn add_char(&mut self, c: char){
         self.stdin.insert((c, self.cursor.clone()));
-        self.actions.push(TerminalAction::WriteChar(c));
+        // GlyphLayout::compile selon l'etat et defini la position
+        // peut etre qu'au final une struct GlyphRenderer auras une utiliter si on render un text ou un Rectangle ?
+        // plus de self action mais des push de render ? et Terminal.render() boucle for l in list_renderer l.render() ?
+        let point = self.cursor_alignment(AnchorPoint::Center, None);
+        self.renders.push(Box::new(GlyphRenderer {text: c, position: point, style: self.glyph.style}));
+        if c == '\n' {
+            self.new_line();
+        } else {
+            self.new_col();
+        }
         self.dirty = true;
     }
 
@@ -121,17 +102,23 @@ impl Terminal {
     }
 
     pub fn new_col(&mut self){
-        let compute = self.alignment(AnchorPoint::TopRight, self.cursor + Point::new(1, 0));
+        let compute = self.cursor_alignment(AnchorPoint::TopRight, Point::new(1, 0));
+        dbg_println!("{:?}", compute);
 
-        if self.win_size().width < compute.x as u32 {
+        if self.win_layout().content_size.width < compute.x as u32 {
             self.new_line()
         } else {
             self.cursor.x += 1;
         }
     }
 
-    pub fn cursor_alignment(&self, anchor_point: AnchorPoint) -> Point{
-        GridBoxLayout::new(&self.win_layout()).resolve(self.cursor, anchor_point)
+    /// le impl Into<...> permet la conversion de Point en Option<Point> sans avoir a faire Some(Point)
+    pub fn cursor_alignment(&self, anchor_point: AnchorPoint, offset_point: impl Into<Option<Point>>) -> Point{
+        dbg_println!("{:?}",self.cursor);
+        GridBoxLayout::new(
+            &BoxLayout::new(self.cursor, self.glyph.style.font.character_size, Inset::new(2, 0, 2, 0))
+        ).resolve(self.cursor + offset_point.into().unwrap_or(Point::zero()), anchor_point)
+            + self.win_layout().inner_position_to(AnchorPoint::TopLeft)
     }
 }
 

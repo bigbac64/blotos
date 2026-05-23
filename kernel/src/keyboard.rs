@@ -32,9 +32,19 @@ pub fn process_scancode(scancode: u8) {
 
         if let Some(terminal) = terminal {
             match key {
-                DecodedKey::Unicode('\x08') => {
-                    terminal.remove_char();
-                }, // Backspace en ASCII (lié a la comptabilité de traitement des ces raw code)
+                /* Ctrl+A - début de ligne */
+                DecodedKey::Unicode('\u{1}')  => {  }
+                /* Ctrl+C - interruption   */
+                DecodedKey::Unicode('\u{3}')  => {  }
+                /* Ctrl+D - fin de fichier */
+                DecodedKey::Unicode('\u{4}')  => {  }
+                /* Ctrl+L - clear screen   */
+                DecodedKey::Unicode('\u{C}')  => { 
+                }
+                /* Ctrl+Z - suspend        */
+                DecodedKey::Unicode('\u{1A}') => {  }
+                /* Enter                   */
+                DecodedKey::Unicode('\r')     => {  }
                 DecodedKey::Unicode('\x1B') => todo! (),   // Escape en ASCII
                 DecodedKey::Unicode('\x7F') => todo! (),   // Delete en ASCII (parfois)
                 DecodedKey::Unicode(character) => {
@@ -46,8 +56,11 @@ pub fn process_scancode(scancode: u8) {
                         KeyCode::Backspace => {
                             terminal.remove_char();
                         }
+                        KeyCode::LShift => {
+                            dbg_println!("shift : {:?}", keycode);
+                        }
                         _ => {
-                            terminal.write_str("c'est quand meme mieux print").expect("aled");
+                            dbg_println!("no treatment : {:?}", keycode);
                         }
                     }
                 }
